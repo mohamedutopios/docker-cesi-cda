@@ -1,0 +1,88 @@
+version: '3.8' # Version du format du fichier Compose
+
+services:
+  web:
+    image: nginx:latest # Utilise l'image nginx la plus récente
+    build:
+      context: . # Contexte de build (dossier courant)
+      dockerfile: Dockerfile.prod # Utilise un Dockerfile personnalisé
+    ports:
+      - "80:80" # Mappe le port 80 de l'hôte au port 80 du conteneur
+      - "443:443" # Mappe le port 443 de l'hôte au port 443 du conteneur
+    environment:
+      - NODE_ENV=production # Définir la variable d'environnement NODE_ENV à production
+      - MYSQL_ROOT_PASSWORD=root # Définir le mot de passe root de MySQL
+    volumes:
+      - ./data:/var/lib/mysql # Monte le dossier local 'data' dans le conteneur
+      - /etc/localtime:/etc/localtime:ro # Monte l'heure locale en lecture seule
+    networks:
+      - front-end # Connecte le service au réseau front-end
+      - back-end # Connecte le service au réseau back-end
+    depends_on:
+      - db # Assure que le service db démarre avant le service web
+      - redis # Assure que le service redis démarre avant le service web
+    restart: always # Redémarre toujours le conteneur en cas d'arrêt
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost || exit 1"] # Teste la santé du conteneur en exécutant une commande shell
+      interval: 1m30s # Intervalle entre chaque test de santé
+      timeout: 10s # Délai avant l'expiration du test de santé
+      retries: 3 # Nombre de tentatives de test de santé avant de considérer le conteneur comme non sain
+      start_period: 40s # Délai de grâce après le démarrage avant d'exécuter le premier test de santé
+    logging:
+      driver: "json-file" # Utilise le driver de journalisation json-file
+      options:
+        max-size: "200k" # Taille maximale des fichiers de log
+        max-file: "10" # Nombre maximum de fichiers de log à conserver
+    entrypoint: ["./entrypoint.sh"] # Remplace le point d'entrée par défaut du conteneur
+    extra_hosts:
+      - "somehost:192.168.1.100" # Ajoute une entrée dans le fichier /etc/hosts du conteneur
+    labels:
+      com.example.description: "Web server" # Ajoute une étiquette de description au conteneur
+      com.example.environment: "production" # Ajoute une étiquette d'environnement au conteneur
+    ulimits:
+      nproc: 65535 # Limite le nombre de processus
+      nofile:
+        soft: 20000 # Limite douce pour le nombre de fichiers ouverts
+        hard: 40000 # Limite dure pour le nombre de fichiers ouverts
+    cap_add:
+      - ALL # Ajoute toutes les capacités Linux au conteneur
+    cap_drop:
+      - NET_ADMIN # Supprime la capacité NET_ADMIN du conteneur
+      - SYS_ADMIN # Supprime la capacité SYS_ADMIN du conteneur
+    dns:
+      - 8.8.8.8 # Spécifie le serveur DNS à utiliser
+      - 8.8.4.4 # Spécifie un deuxième serveur DNS
+
+  db:
+    image: mysql:5.7 # Utilise l'image MySQL 5.7
+    environment:
+      MYSQL_ROOT_PASSWORD: example # Définir le mot de passe root de MySQL
+    volumes:
+      - db_data:/var/lib/mysql # Monte le volume db_data dans le conteneur
+    networks:
+      - back-end # Connecte le service au réseau back-end
+    secrets:
+      - my_secret # Utilise le secret my_secret
+
+  redis:
+    image: redis:latest # Utilise l'image Redis la plus récente
+    networks:
+      - back-end # Connecte le service au réseau back-end
+
+networks:
+  front-end: # Déclare le réseau front-end
+  back-end: # Déclare le réseau back-end
+
+volumes:
+  db_data: # Déclare le volume db_data
+
+secrets:
+  my_secret:
+    file: ./secret.txt # Définit le secret à partir d'un fichier
+
+configs:
+  my_config:
+    file: ./config.yml # Définit la configuration à partir d'un fichier
+
+profiles:
+  - debug # Déclare un profil debug
