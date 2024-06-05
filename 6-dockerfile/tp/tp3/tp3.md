@@ -1,4 +1,4 @@
-## TP-4-Dockerfile - Bonus
+##   - Bonus
 
 - Vous allez dans ce TP, essayez de créer une image Docker d’un projet Angular.
 - Vous allez utiliser pour cela un Dockerfile.
