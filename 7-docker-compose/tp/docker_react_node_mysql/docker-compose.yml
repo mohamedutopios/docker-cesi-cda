@@ -1,0 +1,39 @@
+version: "3.8"
+
+services:
+  db: # Définit le service 'db' pour la base de données MySQL
+    image: mysql:8.0 # Utilise l'image Docker MySQL 8.0
+    environment: # Définit les variables d'environnement pour la configuration de la base de données
+      - MYSQL_DATABASE=appdb # Spécifie le nom de la base de données
+      - MYSQL_PASSWORD=pass123 # Définit le mot de passe pour l'utilisateur MySQL
+      - MYSQL_ROOT_PASSWORD=pass123 # Définit le mot de passe root pour MySQL
+    networks:
+      - sameNetworkAsMysql # Connecte le service au réseau 'sameNetworkAsMysql'
+    ports:
+      - 3307:3306 # Mappe le port 3306 du conteneur au port 3307 de l'hôte
+
+  api: # Définit le service 'api' pour l'API backend
+    build: # Construit le backend en utilisant le Dockerfile fourni
+      context: ./backend # Spécifie le répertoire du contexte de construction pour le backend
+      dockerfile: Dockerfile # Spécifie le Dockerfile à utiliser pour la construction du backend
+    ports:
+      - 3000:3000 # Mappe le port 3000 du conteneur au port 3000 de l'hôte
+    networks:
+      - sameNetworkAsMysql # Connecte le service au réseau 'sameNetworkAsMysql'
+    depends_on:
+      - db # Spécifie que le service 'api' dépend du service 'db'
+
+  frontend: # Définit le service 'frontend' pour l'application frontend
+    restart: on-failure # Redémarre le conteneur en cas d'échec
+    build: # Construit l'application frontend en utilisant le Dockerfile fourni
+      context: ./frontend # Spécifie le répertoire du contexte de construction pour le frontend
+    ports:
+      - 3001:3000 # Mappe le port 3000 du conteneur au port 3001 de l'hôte
+    networks:
+      - sameNetworkAsMysql # Connecte le service au réseau 'sameNetworkAsMysql'
+    depends_on:
+      - api # Spécifie que le service 'frontend' dépend du service 'api'
+
+networks:
+  sameNetworkAsMysql: # Définit le réseau 'sameNetworkAsMysql'
+    driver: bridge # Spécifie le driver de réseau comme 'bridge'
